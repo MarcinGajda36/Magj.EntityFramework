@@ -208,25 +208,27 @@ public static class DbContextFactoryExtensions
             static (context, resultFactory, cancellationToken) => resultFactory(context, cancellationToken),
             cancellationToken);
 
-    public static IAsyncEnumerable<TResult> StreamAsync<TContext, TArgument, TResult>(
+    public static IAsyncEnumerable<TResult> StreamReadAsync<TContext, TArgument, TResult>(
         this IDbContextFactory<TContext> dbContextFactory,
         TArgument argument,
         Func<TContext, TArgument, IQueryable<TResult>> queryFactory,
+        QueryTrackingBehavior queryTrackingBehavior = DefaultReadQueryTrackingBehavior,
         CancellationToken cancellationToken = default)
         where TContext : DbContext
     {
         ArgumentNullException.ThrowIfNull(dbContextFactory);
         ArgumentNullException.ThrowIfNull(queryFactory);
-        return Core(dbContextFactory, argument, queryFactory, cancellationToken);
+        return CoreAsync(dbContextFactory, argument, queryFactory, queryTrackingBehavior, cancellationToken);
 
-        static async IAsyncEnumerable<TResult> Core(
+        static async IAsyncEnumerable<TResult> CoreAsync(
             IDbContextFactory<TContext> dbContextFactory,
             TArgument argument,
             Func<TContext, TArgument, IQueryable<TResult>> queryFactory,
+            QueryTrackingBehavior queryTrackingBehavior,
             [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             await using var context = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            context.ChangeTracker.QueryTrackingBehavior = queryTrackingBehavior;
             await foreach (var result in queryFactory(context, argument)
                 .AsAsyncEnumerable()
                 .WithCancellation(cancellationToken))
@@ -236,29 +238,16 @@ public static class DbContextFactoryExtensions
         }
     }
 
-    public static IAsyncEnumerable<TResult> StreamAsync<TContext, TResult>(
+    public static IAsyncEnumerable<TResult> StreamReadAsync<TContext, TResult>(
         this IDbContextFactory<TContext> dbContextFactory,
         Func<TContext, IQueryable<TResult>> queryFactory,
+        QueryTrackingBehavior queryTrackingBehavior = DefaultReadQueryTrackingBehavior,
         CancellationToken cancellationToken = default)
         where TContext : DbContext
-    {
-        ArgumentNullException.ThrowIfNull(dbContextFactory);
-        ArgumentNullException.ThrowIfNull(queryFactory);
-        return Core(dbContextFactory, queryFactory, cancellationToken);
-
-        static async IAsyncEnumerable<TResult> Core(
-            IDbContextFactory<TContext> dbContextFactory,
-            Func<TContext, IQueryable<TResult>> queryFactory,
-            [EnumeratorCancellation] CancellationToken cancellationToken)
-        {
-            await using var context = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-            await foreach (var result in queryFactory(context)
-                .AsAsyncEnumerable()
-                .WithCancellation(cancellationToken))
-            {
-                yield return result;
-            }
-        }
-    }
+        => StreamReadAsync(
+            dbContextFactory,
+            queryFactory,
+            static (context, queryFactory) => queryFactory(context),
+            queryTrackingBehavior,
+            cancellationToken);
 }
