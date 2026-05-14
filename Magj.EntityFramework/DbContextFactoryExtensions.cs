@@ -25,10 +25,7 @@ public static class DbContextFactoryExtensions
         QueryTrackingBehavior queryTrackingBehavior = DefaultSaveQueryTrackingBehavior,
         CancellationToken cancellationToken = default)
         where TContext : DbContext
-    {
-        ArgumentNullException.ThrowIfNull(dbContextFactory);
-        ArgumentNullException.ThrowIfNull(resultFactory);
-        return ExecuteInStrategyAsync(
+        => ExecuteInStrategyAsync(
             dbContextFactory,
             (argument, resultFactory, queryTrackingBehavior, isolationLevel),
             static async (context, arguments, cancellationToken) =>
@@ -41,7 +38,6 @@ public static class DbContextFactoryExtensions
                 return new SavedResult<TResult>(result, affectedRows);
             },
             cancellationToken);
-    }
 
     public static Task<SavedResult<TResult>> SaveInTransactionAsync<TContext, TResult>(
         this IDbContextFactory<TContext> dbContextFactory,
@@ -65,10 +61,7 @@ public static class DbContextFactoryExtensions
         QueryTrackingBehavior queryTrackingBehavior = DefaultSaveQueryTrackingBehavior,
         CancellationToken cancellationToken = default)
         where TContext : DbContext
-    {
-        ArgumentNullException.ThrowIfNull(dbContextFactory);
-        ArgumentNullException.ThrowIfNull(resultFactory);
-        return ExecuteInStrategyAsync(
+        => ExecuteInStrategyAsync(
             dbContextFactory,
             (argument, resultFactory, queryTrackingBehavior),
             static async (context, arguments, cancellationToken) =>
@@ -79,7 +72,6 @@ public static class DbContextFactoryExtensions
                 return new SavedResult<TResult>(result, affectedRows);
             },
             cancellationToken);
-    }
 
     public static Task<SavedResult<TResult>> SaveAsync<TContext, TResult>(
         this IDbContextFactory<TContext> dbContextFactory,
@@ -101,10 +93,7 @@ public static class DbContextFactoryExtensions
         QueryTrackingBehavior queryTrackingBehavior = DefaultReadQueryTrackingBehavior,
         CancellationToken cancellationToken = default)
         where TContext : DbContext
-    {
-        ArgumentNullException.ThrowIfNull(dbContextFactory);
-        ArgumentNullException.ThrowIfNull(resultFactory);
-        return ExecuteInStrategyAsync(
+        => ExecuteInStrategyAsync(
             dbContextFactory,
             (argument, resultFactory, queryTrackingBehavior),
             static (context, arguments, cancellationToken) =>
@@ -113,7 +102,6 @@ public static class DbContextFactoryExtensions
                 return arguments.resultFactory(context, arguments.argument, cancellationToken);
             },
             cancellationToken);
-    }
 
     public static Task<TResult> ReadAsync<TContext, TResult>(
         this IDbContextFactory<TContext> dbContextFactory,
@@ -136,10 +124,7 @@ public static class DbContextFactoryExtensions
         QueryTrackingBehavior queryTrackingBehavior = DefaultReadQueryTrackingBehavior,
         CancellationToken cancellationToken = default)
         where TContext : DbContext
-    {
-        ArgumentNullException.ThrowIfNull(dbContextFactory);
-        ArgumentNullException.ThrowIfNull(resultFactory);
-        return ExecuteInStrategyAsync(
+        => ExecuteInStrategyAsync(
             dbContextFactory,
             (argument, resultFactory, isolationLevel, queryTrackingBehavior),
             static async (context, arguments, cancellationToken) =>
@@ -149,7 +134,6 @@ public static class DbContextFactoryExtensions
                 return await arguments.resultFactory(context, arguments.argument, cancellationToken);
             },
             cancellationToken);
-    }
 
     public static Task<TResult> ReadInTransactionAsync<TContext, TResult>(
         this IDbContextFactory<TContext> dbContextFactory,
