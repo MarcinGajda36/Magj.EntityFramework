@@ -128,31 +128,43 @@ public static class DbContextFactoryExtensions
             queryTrackingBehavior,
             cancellationToken);
 
-    public static Task<TResult> ReadInTransactionAsync<TContext, TArgument, TResult, TEntity>(
+    public static Task<TResult> ReadInTransactionAsync<TContext, TArgument, TResult>(
         this IDbContextFactory<TContext> dbContextFactory,
         TArgument argument,
-        Func<TContext, IQueryable<TEntity>> entitySelector,
-        Func<IQueryable<TEntity>, TArgument, CancellationToken, ValueTask<TResult>> resultFactory,
+        Func<TContext, TArgument, CancellationToken, ValueTask<TResult>> resultFactory,
         IsolationLevel isolationLevel = DefaultIsolationLevel,
+        QueryTrackingBehavior queryTrackingBehavior = DefaultReadQueryTrackingBehavior,
         CancellationToken cancellationToken = default)
         where TContext : DbContext
     {
         ArgumentNullException.ThrowIfNull(dbContextFactory);
-        ArgumentNullException.ThrowIfNull(entitySelector);
         ArgumentNullException.ThrowIfNull(resultFactory);
         return ExecuteInStrategyAsync(
             dbContextFactory,
-            (isolationLevel, entitySelector, resultFactory, argument),
+            (argument, resultFactory, isolationLevel, queryTrackingBehavior),
             static async (context, arguments, cancellationToken) =>
             {
-                context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var (isolationLevel, entitySelector, resultFactory, argument) = arguments;
-                await using var transaction = await context.Database.BeginTransactionAsync(isolationLevel, cancellationToken);
-                var entities = entitySelector(context);
-                return await resultFactory(entities, argument, cancellationToken);
+                context.ChangeTracker.QueryTrackingBehavior = arguments.queryTrackingBehavior;
+                await using var transaction = await context.Database.BeginTransactionAsync(arguments.isolationLevel, cancellationToken);
+                return await arguments.resultFactory(context, arguments.argument, cancellationToken);
             },
             cancellationToken);
     }
+
+    public static Task<TResult> ReadInTransactionAsync<TContext, TResult>(
+        this IDbContextFactory<TContext> dbContextFactory,
+        Func<TContext, CancellationToken, ValueTask<TResult>> resultFactory,
+        IsolationLevel isolationLevel = DefaultIsolationLevel,
+        QueryTrackingBehavior queryTrackingBehavior = DefaultReadQueryTrackingBehavior,
+        CancellationToken cancellationToken = default)
+        where TContext : DbContext
+        => ReadInTransactionAsync(
+            dbContextFactory,
+            resultFactory,
+            static (context, resultFactory, cancellationToken) => resultFactory(context, cancellationToken),
+            isolationLevel,
+            queryTrackingBehavior,
+            cancellationToken);
 
     public static Task<TResult> ExecuteInStrategyAsync<TContext, TArgument, TResult>(
         this IDbContextFactory<TContext> dbContextFactory,
@@ -240,31 +252,6 @@ public static class DbContextFactoryExtensions
                 yield return result;
             }
         }
-    }
-
-    public static Task<TResult> ReadInTransactionAsync<TContext, TResult, TEntity>(
-        this IDbContextFactory<TContext> dbContextFactory,
-        Func<TContext, IQueryable<TEntity>> entitySelector,
-        Func<IQueryable<TEntity>, CancellationToken, ValueTask<TResult>> resultFactory,
-        IsolationLevel isolationLevel = DefaultIsolationLevel,
-        CancellationToken cancellationToken = default)
-        where TContext : DbContext
-    {
-        ArgumentNullException.ThrowIfNull(dbContextFactory);
-        ArgumentNullException.ThrowIfNull(entitySelector);
-        ArgumentNullException.ThrowIfNull(resultFactory);
-        return ExecuteInStrategyAsync(
-            dbContextFactory,
-            (isolationLevel, entitySelector, resultFactory),
-            static async (context, arguments, cancellationToken) =>
-            {
-                context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
-                var (isolationLevel, entitySelector, resultFactory) = arguments;
-                await using var transaction = await context.Database.BeginTransactionAsync(isolationLevel, cancellationToken);
-                var entities = entitySelector(context);
-                return await resultFactory(entities, cancellationToken);
-            },
-            cancellationToken);
     }
 
     public static IAsyncEnumerable<TResult> StreamAsync<TContext, TResult>(
