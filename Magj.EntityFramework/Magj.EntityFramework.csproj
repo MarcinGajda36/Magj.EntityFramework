@@ -9,7 +9,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Authors>Marcin Gajda</Authors>
     <Description>
-      Provides helper extensions hanging of IDbContextFactory. Example: using Magj.EntityFramework; contextFactory.SaveInTransactionAsync(...); contextFactory.ReadAsync(...);
+      Provides helper extensions hanging of IDbContextFactory. Example: using Magj.EntityFramework; contextFactory.SaveInTransactionAsync(...); contextFactory.ReadAsync(...); contextFactory.StreamReadAsync(...);
     </Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Version>1.0.0</Version>
