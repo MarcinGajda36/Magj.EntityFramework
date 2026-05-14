@@ -175,9 +175,9 @@ public static class DbContextFactoryExtensions
     {
         ArgumentNullException.ThrowIfNull(dbContextFactory);
         ArgumentNullException.ThrowIfNull(resultFactory);
-        return Core(dbContextFactory, argument, resultFactory, cancellationToken);
+        return CoreAsync(dbContextFactory, argument, resultFactory, cancellationToken);
 
-        static async Task<TResult> Core(
+        static async Task<TResult> CoreAsync(
             IDbContextFactory<TContext> dbContextFactory,
             TArgument argument,
             Func<TContext, TArgument, CancellationToken, Task<TResult>> resultFactory,
@@ -202,29 +202,11 @@ public static class DbContextFactoryExtensions
         Func<TContext, CancellationToken, Task<TResult>> resultFactory,
         CancellationToken cancellationToken = default)
         where TContext : DbContext
-    {
-        ArgumentNullException.ThrowIfNull(dbContextFactory);
-        ArgumentNullException.ThrowIfNull(resultFactory);
-        return Core(dbContextFactory, resultFactory, cancellationToken);
-
-        static async Task<TResult> Core(
-            IDbContextFactory<TContext> dbContextFactory,
-            Func<TContext, CancellationToken, Task<TResult>> resultFactory,
-            CancellationToken cancellationToken)
-        {
-            await using var context = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            var strategy = context.Database.CreateExecutionStrategy();
-            return await strategy.ExecuteAsync(
-                resultFactory,
-                static (contextBase, resultFactory, cancellationToken) =>
-                {
-                    contextBase.ChangeTracker.Clear(); // When re-try triggers then ChangeTracker still has changes from previous try iirc.
-                    return resultFactory((TContext)contextBase, cancellationToken);
-                },
-                null,
-                cancellationToken);
-        }
-    }
+        => ExecuteInStrategyAsync(
+            dbContextFactory,
+            resultFactory,
+            static (context, resultFactory, cancellationToken) => resultFactory(context, cancellationToken),
+            cancellationToken);
 
     public static IAsyncEnumerable<TResult> StreamAsync<TContext, TArgument, TResult>(
         this IDbContextFactory<TContext> dbContextFactory,
