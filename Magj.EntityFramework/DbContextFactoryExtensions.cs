@@ -20,6 +20,17 @@ public static class DbContextFactoryExtensions
     extension<TContext>(IDbContextFactory<TContext> dbContextFactory)
         where TContext : DbContext
     {
+        /// <summary>
+        /// Executes provided <see cref="resultFactory"/> inside transaction, using default ExecutionStrategy, then saves and commits results.
+        /// </summary>
+        /// <typeparam name="TArgument">Type of argument used for avoiding lambda captures.</typeparam>
+        /// <typeparam name="TResult">Type returned by <see cref="resultFactory"/> function.</typeparam>
+        /// <param name="argument">Argument used for avoiding lambda captures.</param>
+        /// <param name="resultFactory">Function that either causes changes visible to EF ChangeTracker, or saves data to database itself.</param>
+        /// <param name="isolationLevel">Level of transaction isolation.</param>
+        /// <param name="queryTrackingBehavior">Behavior of EF ChangeTracker query tracking.</param>
+        /// <param name="cancellationToken">Token for cancelling ongoing saving.</param>
+        /// <returns>Value returned from <see cref="resultFactory"/> together with count of affected rows.</returns>
         public Task<SavedResult<TResult>> SaveInTransactionAsync<TArgument, TResult>(
             TArgument argument,
             Func<TContext, TArgument, CancellationToken, ValueTask<TResult>> resultFactory,
@@ -40,6 +51,15 @@ public static class DbContextFactoryExtensions
                 },
                 cancellationToken);
 
+        /// <summary>
+        /// Executes provided <see cref="resultFactory"/> inside transaction, using default ExecutionStrategy, then saves and commits results.
+        /// </summary>
+        /// <typeparam name="TResult">Type returned by <see cref="resultFactory"/> function.</typeparam>
+        /// <param name="resultFactory">Function that either causes changes visible to EF ChangeTracker, or saves data to database itself.</param>
+        /// <param name="isolationLevel">Level of transaction isolation.</param>
+        /// <param name="queryTrackingBehavior">Behavior of EF ChangeTracker query tracking.</param>
+        /// <param name="cancellationToken">Token for cancelling ongoing saving.</param>
+        /// <returns>Value returned from <see cref="resultFactory"/> together with count of affected rows.</returns>
         public Task<SavedResult<TResult>> SaveInTransactionAsync<TResult>(
             Func<TContext, CancellationToken, ValueTask<TResult>> resultFactory,
             IsolationLevel isolationLevel = DefaultIsolationLevel,
@@ -56,6 +76,63 @@ public static class DbContextFactoryExtensions
                     var affectedRows = await context.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
                     return new SavedResult<TResult>(result, affectedRows);
+                },
+                cancellationToken);
+
+        /// <summary>
+        /// Executes provided <see cref="resultFactory"/> inside transaction, using default ExecutionStrategy, then saves and commits results.
+        /// </summary>
+        /// <typeparam name="TArgument">Type of argument used for avoiding lambda captures.</typeparam>
+        /// <param name="argument">Argument used for avoiding lambda captures.</param>
+        /// <param name="resultFactory">Function that either causes changes visible to EF ChangeTracker, or saves data to database itself.</param>
+        /// <param name="isolationLevel">Level of transaction isolation.</param>
+        /// <param name="queryTrackingBehavior">Behavior of EF ChangeTracker query tracking.</param>
+        /// <param name="cancellationToken">Token for cancelling ongoing saving.</param>
+        /// <returns>Count of affected rows.</returns>
+        public Task<int> SaveInTransactionAsync<TArgument>(
+            TArgument argument,
+            Func<TContext, TArgument, CancellationToken, ValueTask> resultFactory,
+            IsolationLevel isolationLevel = DefaultIsolationLevel,
+            QueryTrackingBehavior queryTrackingBehavior = DefaultSaveQueryTrackingBehavior,
+            CancellationToken cancellationToken = default)
+            => ExecuteInStrategyAsync(
+                dbContextFactory,
+                (argument, resultFactory, queryTrackingBehavior, isolationLevel),
+                static async (context, arguments, cancellationToken) =>
+                {
+                    context.ChangeTracker.QueryTrackingBehavior = arguments.queryTrackingBehavior;
+                    await using var transaction = await context.Database.BeginTransactionAsync(arguments.isolationLevel, cancellationToken);
+                    await arguments.resultFactory(context, arguments.argument, cancellationToken);
+                    var affectedRows = await context.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                    return affectedRows;
+                },
+                cancellationToken);
+
+        /// <summary>
+        /// Executes provided <see cref="resultFactory"/> inside transaction, using default ExecutionStrategy, then saves and commits results.
+        /// </summary>
+        /// <param name="resultFactory">Function that either causes changes visible to EF ChangeTracker, or saves data to database itself.</param>
+        /// <param name="isolationLevel">Level of transaction isolation.</param>
+        /// <param name="queryTrackingBehavior">Behavior of EF ChangeTracker query tracking.</param>
+        /// <param name="cancellationToken">Token for cancelling ongoing saving.</param>
+        /// <returns>Count of affected rows.</returns>
+        public Task<int> SaveInTransactionAsync(
+            Func<TContext, CancellationToken, ValueTask> resultFactory,
+            IsolationLevel isolationLevel = DefaultIsolationLevel,
+            QueryTrackingBehavior queryTrackingBehavior = DefaultSaveQueryTrackingBehavior,
+            CancellationToken cancellationToken = default)
+            => ExecuteInStrategyAsync(
+                dbContextFactory,
+                (resultFactory, queryTrackingBehavior, isolationLevel),
+                async (context, arguments, cancellationToken) =>
+                {
+                    context.ChangeTracker.QueryTrackingBehavior = arguments.queryTrackingBehavior;
+                    await using var transaction = await context.Database.BeginTransactionAsync(arguments.isolationLevel, cancellationToken);
+                    await arguments.resultFactory(context, cancellationToken);
+                    var affectedRows = await context.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                    return affectedRows;
                 },
                 cancellationToken);
 
