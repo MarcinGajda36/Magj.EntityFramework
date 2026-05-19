@@ -237,6 +237,15 @@ public static class DbContextFactoryExtensions
                 queryTrackingBehavior,
                 cancellationToken);
 
+        /// <summary>
+        /// Executes provided <see cref="resultFactory"/> using default ExecutionStrategy, then returns results.
+        /// </summary>
+        /// <typeparam name="TArgument">Type of argument used for avoiding lambda captures.</typeparam>
+        /// <typeparam name="TResult">Type returned by <see cref="resultFactory"/> function.</typeparam>
+        /// <param name="argument">Argument used for avoiding lambda captures.</param>
+        /// <param name="resultFactory">Function that read desired results.</param>
+        /// <param name="cancellationToken">Token for cancelling ongoing reads.</param>
+        /// <returns>Value returned from <see cref="resultFactory"/>.</returns>
         public Task<TResult> ReadAsync<TArgument, TResult>(
             TArgument argument,
             Func<TContext, TArgument, CancellationToken, Task<TResult>> resultFactory,
@@ -248,6 +257,13 @@ public static class DbContextFactoryExtensions
                 ReadQueryTrackingBehavior,
                 cancellationToken);
 
+        /// <summary>
+        /// Executes provided <see cref="resultFactory"/> using default ExecutionStrategy, then returns results.
+        /// </summary>
+        /// <typeparam name="TResult">Type returned by <see cref="resultFactory"/> function.</typeparam>
+        /// <param name="resultFactory">Function that read desired results.</param>
+        /// <param name="cancellationToken">Token for cancelling ongoing reads.</param>
+        /// <returns>Value returned from <see cref="resultFactory"/>.</returns>
         public Task<TResult> ReadAsync<TResult>(
             Func<TContext, CancellationToken, Task<TResult>> resultFactory,
             CancellationToken cancellationToken = default)
@@ -257,6 +273,16 @@ public static class DbContextFactoryExtensions
                 ReadQueryTrackingBehavior,
                 cancellationToken);
 
+        /// <summary>
+        /// Executes provided <see cref="resultFactory"/> inside transaction, using default ExecutionStrategy, then returns results.
+        /// </summary>
+        /// <typeparam name="TArgument">Type of argument used for avoiding lambda captures.</typeparam>
+        /// <typeparam name="TResult">Type returned by <see cref="resultFactory"/> function.</typeparam>
+        /// <param name="argument">Argument used for avoiding lambda captures.</param>
+        /// <param name="resultFactory">Function that read desired results.</param>
+        /// <param name="isolationLevel">Level of transaction isolation.</param>
+        /// <param name="cancellationToken">Token for cancelling ongoing saving.</param>
+        /// <returns>Value returned from <see cref="resultFactory"/>.</returns>
         public Task<TResult> ReadInTransactionAsync<TArgument, TResult>(
             TArgument argument,
             Func<TContext, TArgument, CancellationToken, ValueTask<TResult>> resultFactory,
@@ -273,6 +299,14 @@ public static class DbContextFactoryExtensions
                 ReadQueryTrackingBehavior,
                 cancellationToken);
 
+        /// <summary>
+        /// Executes provided <see cref="resultFactory"/> inside transaction, using default ExecutionStrategy, then returns results.
+        /// </summary>
+        /// <typeparam name="TResult">Type returned by <see cref="resultFactory"/> function.</typeparam>
+        /// <param name="resultFactory">Function that read desired results.</param>
+        /// <param name="isolationLevel">Level of transaction isolation.</param>
+        /// <param name="cancellationToken">Token for cancelling ongoing saving.</param>
+        /// <returns>Value returned from <see cref="resultFactory"/>.</returns>
         public Task<TResult> ReadInTransactionAsync<TResult>(
             Func<TContext, CancellationToken, ValueTask<TResult>> resultFactory,
             IsolationLevel isolationLevel = DefaultIsolationLevel,
