@@ -323,6 +323,16 @@ public static class DbContextFactoryExtensions
                 queryTrackingBehavior,
                 cancellationToken);
 
+        /// <summary>
+        /// Executes provided <see cref="resultFactory"/> using default ExecutionStrategy, then returns results.
+        /// </summary>
+        /// <typeparam name="TArgument">Type of argument used for avoiding lambda captures.</typeparam>
+        /// <typeparam name="TResult">Type returned by <see cref="resultFactory"/> function.</typeparam>
+        /// <param name="argument">Argument used for avoiding lambda captures.</param>
+        /// <param name="resultFactory">Any function that interacts with DbContext.</param>
+        /// <param name="queryTrackingBehavior">Behavior of EF ChangeTracker query tracking.</param>
+        /// <param name="cancellationToken">Token for cancelling ongoing saving.</param>
+        /// <returns>Value returned from <see cref="resultFactory"/>.</returns>
         public Task<TResult> ExecuteInStrategyAsync<TArgument, TResult>(
             TArgument argument,
             Func<TContext, TArgument, CancellationToken, Task<TResult>> resultFactory,
@@ -355,6 +365,14 @@ public static class DbContextFactoryExtensions
             }
         }
 
+        /// <summary>
+        /// Executes provided <see cref="resultFactory"/> using default ExecutionStrategy, then returns results.
+        /// </summary>
+        /// <typeparam name="TResult">Type returned by <see cref="resultFactory"/> function.</typeparam>
+        /// <param name="resultFactory">Any function that interacts with DbContext.</param>
+        /// <param name="queryTrackingBehavior">Behavior of EF ChangeTracker query tracking.</param>
+        /// <param name="cancellationToken">Token for cancelling ongoing saving.</param>
+        /// <returns>Value returned from <see cref="resultFactory"/>.</returns>
         public Task<TResult> ExecuteInStrategyAsync<TResult>(
             Func<TContext, CancellationToken, Task<TResult>> resultFactory,
             QueryTrackingBehavior queryTrackingBehavior = DefaultSaveQueryTrackingBehavior,
