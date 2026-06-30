@@ -414,7 +414,7 @@ public static class DbContextFactoryExtensions
         /// <typeparam name="TResult">Type returned by <see cref="queryFactory"/> function.</typeparam>
         /// <param name="argument">Argument used for avoiding lambda captures.</param>
         /// <param name="cancellationToken">Token for cancelling ongoing saving.</param>
-        /// <returns>Results as <see cref="IAsyncEnumerable{TResult}".</returns>
+        /// <returns>Results as IAsyncEnumerable.</returns>
         public IAsyncEnumerable<TResult> StreamReadAsync<TArgument, TResult>(
             TArgument argument,
             Func<TContext, TArgument, IQueryable<TResult>> queryFactory,
@@ -446,7 +446,7 @@ public static class DbContextFactoryExtensions
         /// </summary>
         /// <typeparam name="TResult">Type returned by <see cref="queryFactory"/> function.</typeparam>
         /// <param name="cancellationToken">Token for cancelling ongoing saving.</param>
-        /// <returns>Results as <see cref="IAsyncEnumerable{TResult}".</returns>
+        /// <returns>Results as IAsyncEnumerable.</returns>
         public IAsyncEnumerable<TResult> StreamReadAsync<TResult>(
             Func<TContext, IQueryable<TResult>> queryFactory,
             CancellationToken cancellationToken = default)
