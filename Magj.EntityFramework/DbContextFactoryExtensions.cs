@@ -10,7 +10,11 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
 public readonly record struct SavedResult<TResult>(TResult Result, int AffectedRows);
-
+// TODO ideas:
+// 1) add control over contextBase.ChangeTracker.Clear()
+// 2) StreamAsync(..., Func<..., IAsyncEnumerable<>>)
+// 3) After adding options like 1) create options bag
+// 4) Expose verifySuccess: null from strategy
 public static class DbContextFactoryExtensions
 {
     public const IsolationLevel DefaultIsolationLevel = IsolationLevel.ReadCommitted;
